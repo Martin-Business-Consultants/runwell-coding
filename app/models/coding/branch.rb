@@ -17,10 +17,11 @@ module Coding
     scope :open_prs, -> { where(pr_state: %w[draft open]) }
 
     class << self
-      # The branch name a todo's work goes on: "p-4/58-get-contact-details".
+      # The branch name a todo's work goes on: "p-4/58-get-contact-details", or "work/58-…" for work
+      # straight on a client.
       def name_for(todo)
         slug = todo.title.parameterize.first(40).delete_suffix("-")
-        "#{todo.engagement.ref.downcase}/#{todo.id}-#{slug}"
+        "#{todo.engagement&.ref&.downcase || "work"}/#{todo.id}-#{slug}"
       end
 
       # The todo a branch name points at when nobody recorded it: "p-4/58-…" or "58-…".

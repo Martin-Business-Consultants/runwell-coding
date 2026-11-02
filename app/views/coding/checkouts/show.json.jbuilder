@@ -14,13 +14,12 @@ json.repositories workspace.repositories do |repository|
   json.commands workspace.clone_commands(repository)
   json.setup_notes agent_text(repository.setup_notes)
 end
-json.agreed_scope do
-  json.approved workspace.agreed.present?
-  json.items workspace.agreed_items.map { { description: it.description, this_todo: it == @todo.scope_item } }
-  json.as_the_client_saw_it workspace.agreed
-  json.draft_items(workspace.draft&.scope_items&.map(&:description) || [])
-end
+json.sections workspace.sections.map { { description: it.description, this_todo: it == @todo.scope_item } }
 json.scope_item agent_ref(@todo.scope_item)
-json.commitments workspace.commitments, partial: "commitments/commitment", as: :commitment
+json.dated_work workspace.dated_work do |todo|
+  json.merge! agent_ref(todo)
+  json.extract! todo, :status, :due_on
+  json.owner todo.owner&.display_name
+end
 json.notes workspace.notes, partial: "notes/note", as: :note
 json.documents workspace.documents, partial: "documents/document", as: :document

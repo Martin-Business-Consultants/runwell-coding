@@ -3,7 +3,7 @@
 <% when Coding::Branch %>
   <%= link_to todo_path(item.todo), class: "txt-ink txt-align-start" do %>
     <strong><%= item.todo.title %></strong> <span class="txt-subtle">· checks failing</span>
-    <div class="txt-x-small txt-subtle"><%= item.todo.engagement.ref %> · <%= item.repository.name %> · <%= item.pr_label %></div>
+    <div class="txt-x-small txt-subtle"><%= item.todo.engagement&.ref || item.todo.client&.name %> · <%= item.repository.name %> · <%= item.pr_label %></div>
   <% end %>
 <% when Coding::Deploy %>
   <div class="txt-align-start">

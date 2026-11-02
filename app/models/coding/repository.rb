@@ -43,7 +43,7 @@ module Coding
       # Where the repos in .for came from, or nil when there are none.
       def source_for(record) = candidates(record).find { where(linkable: it).exists? }
 
-      # Repos on a scope item go to its engagement, on a request to its client.
+      # Repos on a scope item go to its engagement.
       def linkable_for(record)
         LINKABLE_TYPES.include?(record.class.name) ? record : record.try(:engagement) || record.try(:client)
       end
@@ -53,7 +53,7 @@ module Coding
       private
         def candidates(record)
           case record
-          when ::Todo then [ record, record.engagement, record.engagement.client ]
+          when ::Todo then [ record, record.engagement, record.client ].compact
           when ::Engagement then [ record, record.client ]
           when ::Client then [ record ]
           else []
@@ -89,7 +89,7 @@ module Coding
         case linkable
         when ::Todo
           self.engagement = linkable.engagement
-          self.client_id = linkable.engagement.client_id
+          self.client_id = linkable.client_id
         when ::Engagement
           self.engagement = linkable
           self.client_id = linkable.client_id

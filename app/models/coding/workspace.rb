@@ -1,7 +1,7 @@
 module Coding
   # Everything someone (or an agent) needs to start a todo on their own machine: where the
-  # code is and how to set it up, the branch to work on, and what was agreed, so the work is
-  # measured against the scope the client approved rather than a guess.
+  # code is and how to set it up, the branch to work on, and the engagement's sections, so the
+  # work is measured against what the engagement delivers rather than a guess.
   class Workspace
     attr_reader :todo
 
@@ -22,14 +22,12 @@ module Coding
         "git switch #{branch_for(repository)} 2>/dev/null || git switch -c #{branch_for(repository)} origin/#{repository.default_branch}" ]
     end
 
-    # The terms in force: the latest approved version as the client saw it, or nil before any
-    # approval (then the draft's items are all there is, and they may still change).
-    def agreed = engagement.current_version&.snapshot
-    def agreed_items = engagement.agreed_items
-    def draft = engagement.draft_version
+    # The engagement's sections, in order. Work straight on a client has none.
+    def sections = engagement ? engagement.scope_items.order(:position).to_a : []
 
     def notes = todo.notes.recent.includes(:author).limit(10)
-    def commitments = engagement.commitments.open.ordered
-    def documents = todo.documents.recent + engagement.documents.recent
+    # Other open work with a date on the same engagement (or client): what's been promised around it.
+    def dated_work = (engagement&.todos || todo.client&.todos || ::Todo.none).open.where.not(id: todo.id).where.not(due_on: nil).includes(:owner).order(:due_on).limit(20)
+    def documents = todo.documents.recent + (engagement&.documents&.recent || [])
   end
 end

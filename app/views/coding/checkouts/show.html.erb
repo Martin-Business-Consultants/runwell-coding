@@ -34,9 +34,9 @@
   <div class="settings__panel panel shadow txt-align-start">
     <section class="settings__section flex flex-column gap-half">
       <header>
-        <h2 class="divider">What was agreed</h2>
+        <h2 class="divider">What it delivers</h2>
       </header>
-      <% items = workspace.agreed_items %>
+      <% items = workspace.sections %>
       <% if items.any? %>
         <ul class="txt-small margin-none">
           <% items.each do |item| %>
@@ -45,23 +45,23 @@
           <% end %>
         </ul>
       <% else %>
-        <p class="txt-small txt-subtle margin-none">Nothing approved yet<%= ", so the draft may still change" if workspace.draft %>.</p>
+        <p class="txt-small txt-subtle margin-none">No <%= term(:scope_item, count: 2).downcase %> yet.</p>
       <% end %>
       <% if @todo.description.present? %>
         <div class="txt-small"><%= rich_text @todo.description %></div>
       <% end %>
     </section>
 
-    <% commitments = workspace.commitments.to_a %>
-    <% if commitments.any? %>
+    <% dated = workspace.dated_work.to_a %>
+    <% if dated.any? %>
       <section class="settings__section flex flex-column gap-half">
         <header>
-          <h2 class="divider">Open commitments</h2>
+          <h2 class="divider">Due around it</h2>
         </header>
         <ul class="txt-small margin-none">
-          <% commitments.each do |commitment| %>
-            <%# herb:key commitment.id %>
-            <li><%= commitment.description %> <span class="txt-subtle">· <%= commitment_owner commitment %> · due <%= l commitment.due_on, format: :short %></span></li>
+          <% dated.each do |todo| %>
+            <%# herb:key todo.id %>
+            <li><%= link_to todo.title, todo_path(todo) %> <span class="txt-subtle">· <%= todo.owner&.display_name || "unassigned" %> · due <%= l todo.due_on, format: :short %></span></li>
           <% end %>
         </ul>
       </section>

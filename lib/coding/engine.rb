@@ -48,7 +48,7 @@ module Coding
     config.to_prepare do
       Runwell::Plugins.agent_brief :coding, ->(todo, base_url) { Coding::Brief.call(todo, base_url) }
       Runwell::Plugins.register :coding, name: "Code", version: Coding::VERSION, author: "Runwell",
-        enabled_by_default: false, requires: ">= 2.1.0", homepage: "https://github.com/Martin-Business-Consultants/runwell-coding",
+        enabled_by_default: false, requires: ">= 3.0.0", homepage: "https://github.com/Martin-Business-Consultants/runwell-coding",
         description: "Link git repositories to clients, engagements and work so an agent can clone and start from a todo. With GitHub connected: pull requests and checks on work, deploys on the timeline, issues as requests, time suggested from commits, and repo access to review when someone leaves."
       Runwell::Plugins.settings :coding, "Code", -> { coding_settings_path }
       Runwell::Plugins.slot :client_panel, :coding, "coding/slots/client_panel"

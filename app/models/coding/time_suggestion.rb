@@ -8,7 +8,7 @@ module Coding
     attr_reader :user, :todo, :date, :commits
 
     def self.for(user)
-      Commit.unsettled.where(user: user).includes(todo: :engagement).order(:committed_at).to_a
+      Commit.unsettled.where(user: user).includes(todo: %i[engagement client]).order(:committed_at).to_a
         .group_by { [ it.todo, it.committed_at.in_time_zone.to_date ] }
         .map { |(todo, date), commits| new(user, todo, date, commits) }
         .sort_by(&:date).reverse

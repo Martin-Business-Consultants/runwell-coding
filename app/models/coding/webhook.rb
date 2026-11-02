@@ -75,7 +75,7 @@ module Coding
         shipped.each { it.record_event!("coding.deployed", payload: { repository: repositories.first.name, environment: deployment["environment"], sha: deployment["sha"].to_s.first(7) }) }
       end
 
-      # An issue with the client label becomes a request to triage, once.
+      # An issue with the client label becomes a request (unassigned work on the client), once.
       def issue
         issue = @payload["issue"]
         return unless @payload["action"].in?(%w[opened labeled])
@@ -83,10 +83,10 @@ module Coding
         return if Issue.where(repository: repositories, number: issue["number"]).exists?
 
         repository = repositories.find(&:engagement) || repositories.first
-        request = ::Request.create!(client: repository.client, subject: issue["title"].to_s.truncate(200), source: "github",
-          sender_name: issue.dig("user", "login"), body: request_body(issue))
-        request.record_event!("request.received", payload: { repository: repository.name, issue: issue["number"] })
-        Issue.create!(repository: repository, number: issue["number"], request: request)
+        todo = ::Todo.create!(client: repository.client, engagement: repository.engagement, title: issue["title"].to_s.truncate(200), source: "github",
+          sender_name: issue.dig("user", "login"), description: request_body(issue))
+        todo.record_event!("todo.requested", payload: { repository: repository.name, issue: issue["number"] })
+        Issue.create!(repository: repository, number: issue["number"], todo: todo)
       end
 
       def push

@@ -20,7 +20,7 @@
           <li class="flex align-center gap-half txt-small" data-filter-target="item">
             <div class="txt-align-start overflow-ellipsis min-width">
               <strong><%= code_duration suggestion.minutes %></strong> <%= suggestion.todo.title %>
-              <div class="txt-x-small txt-subtle"><%= l suggestion.date, format: :short %> · <%= suggestion.todo.engagement.ref %> · <%= suggestion.note %></div>
+              <div class="txt-x-small txt-subtle"><%= l suggestion.date, format: :short %> · <%= suggestion.todo.engagement&.ref || suggestion.todo.client&.name %> · <%= suggestion.note %></div>
             </div>
             <hr class="separator--horizontal flex-item-grow txt-subtle" aria-hidden="true">
             <% if @time_tracking %>
