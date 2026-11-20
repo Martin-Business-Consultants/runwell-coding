@@ -4,9 +4,8 @@ module Coding
   class SettingsController < ApplicationController
     require_permission :manage_settings
     agent_tool :show_code_settings, on: :show, title: "Show the GitHub connection and linked repositories"
-    agent_tool :update_code_settings, on: :update, title: "Change GitHub credentials and code settings",
-      description: "issue_label: GitHub issues with this label become requests. close_work_on_merge: a merged pull request marks its todo done.",
-      params: { connection: { client_id: "string", client_secret: "string", issue_label: "string", close_work_on_merge: "boolean" } }
+    # The OAuth app's id and secret are keys to another service: a person sets them in the browser.
+    browser_only :update, reason: "the GitHub OAuth app's secret is a key to another service"
     agent_tool :disconnect_github, on: :destroy, title: "Disconnect GitHub"
 
     before_action { @connection = Connection.for_settings }

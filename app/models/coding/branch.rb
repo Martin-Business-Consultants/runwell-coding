@@ -1,12 +1,12 @@
 module Coding
-  # A todo's branch in a repo, and its pull request as GitHub last told us.
+  # A task's branch in a repo, and its pull request as GitHub last told us.
   class Branch < ::ApplicationRecord
     self.table_name = "coding_branches"
 
     PR_STATES = %w[draft open merged closed].freeze
     CHECK_STATES = %w[pending success failure].freeze
 
-    belongs_to :todo, class_name: "::Todo"
+    belongs_to :task, class_name: "::Task"
     belongs_to :repository
 
     validates :name, presence: true, uniqueness: { scope: :repository_id }
@@ -17,35 +17,36 @@ module Coding
     scope :open_prs, -> { where(pr_state: %w[draft open]) }
 
     class << self
-      # The branch name a todo's work goes on: "p-4/58-get-contact-details", or "work/58-…" for work
-      # straight on a client.
-      def name_for(todo)
-        slug = todo.title.parameterize.first(40).delete_suffix("-")
-        "#{todo.engagement&.ref&.downcase || "work"}/#{todo.id}-#{slug}"
+      # The branch name a task's work goes on: "p-4/58-get-contact-details", or "task/58-…" for a
+      # task straight on a client. Before 1.0 that was "work/58-…"; task_from reads both.
+      def name_for(task)
+        slug = task.title.parameterize.first(40).delete_suffix("-")
+        "#{task.work&.ref&.downcase || "task"}/#{task.id}-#{slug}"
       end
 
-      # The todo a branch name points at when nobody recorded it: "p-4/58-…" or "58-…".
-      def todo_from(name)
+      # The task a branch name points at when nobody recorded it: "p-4/58-…" or "58-…".
+      def task_from(name)
         id = name.to_s[%r{(?:\A|/)(\d+)-}, 1]
-        ::Todo.find_by(id: id) if id
+        ::Task.find_by(id: id) if id
       end
 
       # The branch row for a name pushed to a repo, recorded or worked out from the name.
       def locate(repository, name)
-        repository.branches.find_by(name: name) || todo_from(name)&.then do |todo|
-          repository.branches.create!(todo: todo, name: name) if Repository.for(todo).include?(repository)
+        repository.branches.find_by(name: name) || task_from(name)&.then do |task|
+          repository.branches.create!(task: task, name: name) if Repository.for(task).include?(repository)
         end
       end
 
-      # What someone reported: the branch a todo is on and its pull request, in whichever of
-      # the todo's repos the pull request belongs to (the first when it doesn't say).
-      def record!(todo, name:, pull_request_url: nil)
+      # What someone (or the AI queue) reported: the branch a task is on and its pull request, in
+      # whichever of the task's repos the pull request belongs to (the first when it doesn't say).
+      # Returns the branch, or nil when there's nothing to record or no repository to put it in.
+      def record!(task, name:, pull_request_url: nil)
         return if name.blank? && pull_request_url.blank?
 
-        repositories = Repository.for(todo)
+        repositories = Repository.for(task)
         repository = repositories.find { pull_request_url.to_s.start_with?(it.web_url + "/") } || repositories.first or return
-        branch = repository.branches.find_or_initialize_by(name: name.presence || name_for(todo))
-        branch.todo = todo
+        branch = repository.branches.find_or_initialize_by(name: name.presence || name_for(task))
+        branch.task = task
         if pull_request_url.present?
           branch.pr_url = pull_request_url
           branch.pr_number = pull_request_url[%r{/pull/(\d+)}, 1] || branch.pr_number

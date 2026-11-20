@@ -19,10 +19,10 @@ module Coding
       suggestion = TimeSuggestion.for(Current.user).find { it.id == params[:suggestion] } or
         return redirect_back(fallback_location: coding_time_suggestions_path, alert: "That suggestion has already been logged or dismissed.")
       minutes = params[:duration].present? ? TimeTracking::Entry.minutes_from(params[:duration]) : suggestion.minutes
-      entry = TimeTracking::Entry.new(user: Current.user, trackable: suggestion.todo, minutes: minutes, worked_on: suggestion.date, note: suggestion.note)
+      entry = TimeTracking::Entry.new(user: Current.user.person, trackable: suggestion.task, minutes: minutes, worked_on: suggestion.date, note: suggestion.note)
       if entry.save
         suggestion.settle!(:logged_at)
-        redirect_back fallback_location: coding_time_suggestions_path, notice: "#{helpers.code_duration(entry.minutes)} logged on “#{suggestion.todo.title}”."
+        redirect_back fallback_location: coding_time_suggestions_path, notice: "#{helpers.code_duration(entry.minutes)} logged on “#{suggestion.task.title}”."
       else
         redirect_back fallback_location: coding_time_suggestions_path, alert: "Enter a duration like 1:30, 90 or 1.5h."
       end

@@ -1,70 +1,64 @@
-<% @page_title = "Work on " + @todo.title %>
+<% @page_title = "Work on #{@task.title}" %>
 <% workspace = @workspace %>
+<%= parent_page @task.title, task_path(@task) %>
+<%= ui :page_header, title: @page_title, description: "Clone the code onto the task’s branch, then work against what its #{term(:work).downcase} delivers." %>
 
-<% content_for :header do %>
-  <%= parent_page @todo.title, todo_path(@todo) %>
-<% end %>
-
-<section class="settings">
-  <div class="settings__panel panel shadow txt-align-start">
-    <h1 class="page-title"><%= @page_title %></h1>
-    <section class="settings__section flex flex-column gap">
-      <header>
-        <h2 class="divider">Clone and start</h2>
-      </header>
-      <% if workspace.repositories.any? %>
-        <% workspace.repositories.each do |repository| %>
-          <%# herb:key repository.id %>
-          <% commands = workspace.clone_commands(repository).join("\n") %>
-          <div class="flex flex-column gap-half txt-small">
-            <strong><%= repository.name %></strong>
-            <%= code_block commands %>
-            <button type="button" class="btn txt-x-small center" data-controller="copy-to-clipboard" data-copy-to-clipboard-content-value="<%= commands %>" data-copy-to-clipboard-success-class="btn--reversed" data-action="copy-to-clipboard#copy">Copy commands</button>
-            <% if repository.setup_notes.present? %>
-              <div class="txt-small"><%= rich_text repository.setup_notes %></div>
-            <% end %>
+<div class="code-page code-page--split">
+  <%= ui :card, title: tag.h2("Clone and start", class: "code-title"), description: ("Branch #{workspace.branch_name}" if workspace.repositories.any?) do %>
+    <% if workspace.repositories.any? %>
+      <% workspace.repositories.each do |repository| %>
+        <%# herb:key repository.id %>
+        <% commands = workspace.clone_commands(repository).join("\n") %>
+        <section class="code-stack">
+          <div class="code-row">
+            <strong class="code-row__main"><%= repository.name %></strong>
+            <%= ui :button, variant: :outline, size: :sm, content: "Copy commands",
+                  data: { controller: "copy-to-clipboard", copy_to_clipboard_content_value: commands, copy_to_clipboard_success_class: "code-copied", action: "copy-to-clipboard#copy" } %>
           </div>
-        <% end %>
-      <% else %>
-        <p class="txt-small txt-subtle margin-none">No repository on this todo, its engagement or its client yet. Link one from the quick actions (A).</p>
+          <%= code_block commands %>
+          <% if repository.setup_notes.present? %>
+            <div class="code-notes"><%= rich_text repository.setup_notes %></div>
+          <% end %>
+        </section>
       <% end %>
-    </section>
-  </div>
+    <% else %>
+      <%= ui :empty, size: :sm, description: "No repository on this #{term(:task).downcase}, its #{term(:work).downcase} or its #{term(:client).downcase} yet. Link one from the quick actions (A)." %>
+    <% end %>
+  <% end %>
 
-  <div class="settings__panel panel shadow txt-align-start">
-    <section class="settings__section flex flex-column gap-half">
-      <header>
-        <h2 class="divider">What it delivers</h2>
-      </header>
-      <% items = workspace.sections %>
-      <% if items.any? %>
-        <ul class="txt-small margin-none">
-          <% items.each do |item| %>
-            <%# herb:key item.id %>
-            <li><%= item.description %><%= " (this todo)" if item == @todo.scope_item %></li>
+  <div class="code-page">
+    <%= ui :card, title: tag.h2("What it delivers", class: "code-title") do %>
+      <% sections = workspace.sections %>
+      <% if sections.any? %>
+        <ul class="code-bullets">
+          <% sections.each do |section| %>
+            <%# herb:key section.id %>
+            <li><%= section.description %><%= " (this #{term(:task).downcase})" if section.id == @task.scope_item_id %></li>
           <% end %>
         </ul>
       <% else %>
-        <p class="txt-small txt-subtle margin-none">No <%= term(:scope_item, count: 2).downcase %> yet.</p>
+        <%= ui :empty, size: :sm, description: "No #{term(:scope_item, count: 2).downcase} yet." %>
       <% end %>
-      <% if @todo.description.present? %>
-        <div class="txt-small"><%= rich_text @todo.description %></div>
+      <% if @task.description.present? %>
+        <div class="code-notes"><%= rich_text @task.description %></div>
       <% end %>
-    </section>
+    <% end %>
 
-    <% dated = workspace.dated_work.to_a %>
+    <% dated = workspace.dated_tasks.to_a %>
     <% if dated.any? %>
-      <section class="settings__section flex flex-column gap-half">
-        <header>
-          <h2 class="divider">Due around it</h2>
-        </header>
-        <ul class="txt-small margin-none">
-          <% dated.each do |todo| %>
-            <%# herb:key todo.id %>
-            <li><%= link_to todo.title, todo_path(todo) %> <span class="txt-subtle">· <%= todo.owner&.display_name || "unassigned" %> · due <%= l todo.due_on, format: :short %></span></li>
+      <%= ui :card, title: tag.h2("Due around it", class: "code-title") do %>
+        <ul class="code-list">
+          <% dated.each do |task| %>
+            <%# herb:key task.id %>
+            <li class="code-row">
+              <%= side_panel_link_to task, class: "code-row__main" do %>
+                <strong><%= task.title %></strong>
+                <span class="code-meta"><%= task.owner&.display_name || "Unassigned" %> · due <%= l task.due_on, format: :short %></span>
+              <% end %>
+            </li>
           <% end %>
         </ul>
-      </section>
+      <% end %>
     <% end %>
   </div>
-</section>
+</div>

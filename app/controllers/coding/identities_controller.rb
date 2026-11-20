@@ -6,7 +6,7 @@ module Coding
       description: "Blank removes it."
 
     def update
-      redirect_back fallback_location: coding_time_suggestions_path, **Identity.assign(Current.user, params.dig(:identity, :github_login))
+      redirect_back fallback_location: coding_time_suggestions_path, **Identity.assign(Current.user.person, params.dig(:identity, :github_login))
     end
   end
 end

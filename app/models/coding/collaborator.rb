@@ -1,6 +1,6 @@
 module Coding
   # Someone GitHub says can reach a repo, as of the last sync. Kept to catch people who have
-  # left: a deactivated person who still has access shows on home until it is removed.
+  # left: a deactivated person who still has access shows on the Code page until it is removed.
   class Collaborator < ::ApplicationRecord
     self.table_name = "coding_collaborators"
 

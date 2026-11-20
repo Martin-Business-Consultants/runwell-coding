@@ -1,0 +1,22 @@
+<%# locals: (form:) %>
+<%# A repository's fields, for linking one (the quick action) and editing it. %>
+<%= form.ui :field, :url, label: "Git remote" do %>
+  <%= form.ui :input, :url, required: true, autocomplete: "off", placeholder: "https://github.com/you/site or git@github.com:you/site.git" %>
+<% end %>
+<div class="code-form__pair">
+  <%= form.ui :field, :default_branch, label: "Default branch" do %>
+    <%= form.ui :input, :default_branch, autocomplete: "off", placeholder: "main" %>
+  <% end %>
+  <%= form.ui :field, :path, label: "Folder (in a monorepo)" do %>
+    <%= form.ui :input, :path, autocomplete: "off", placeholder: "Optional" %>
+  <% end %>
+  <%= form.ui :field, :staging_url, label: "Staging URL" do %>
+    <%= form.ui :input, :staging_url, type: :url, autocomplete: "off", placeholder: "https://" %>
+  <% end %>
+  <%= form.ui :field, :production_url, label: "Production URL" do %>
+    <%= form.ui :input, :production_url, type: :url, autocomplete: "off", placeholder: "https://" %>
+  <% end %>
+</div>
+<%= form.ui :field, :setup_notes, label: "Setup notes", description: "How to get it running, and where secrets live (never the secrets)." do %>
+  <%= rich_text_field form, :setup_notes, staff: true %>
+<% end %>

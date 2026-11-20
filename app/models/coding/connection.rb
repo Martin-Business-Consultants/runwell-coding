@@ -1,5 +1,5 @@
 module Coding
-  # The agency's connection to GitHub (one row): its own OAuth app, the token of whoever
+  # The connection to GitHub (one row): its own OAuth app, the token of whoever
   # connected it, and the secret GitHub signs webhooks with. Everything GitHub does here
   # (pull requests, checks, deploys, issues, who can reach a repo) runs through it.
   class Connection < ::ApplicationRecord

@@ -1,147 +1,114 @@
 <% @page_title = "Code" %>
 <%= render "settings/header", current: :coding %>
 
-<section class="settings">
-  <div class="settings__panel panel shadow txt-align-start">
-    <section class="settings__section flex flex-column gap">
-      <header>
-        <h2 class="divider">GitHub</h2>
-      </header>
-
+<div class="code-page">
+  <%= ui :card, title: tag.h2("GitHub", class: "code-title") do %>
+    <p class="code-line">
       <% if @connection.connected? %>
-        <p class="txt-small margin-none">
-          <%= status_tag "Active" %>
-          Connected as @<%= @connection.login %><%= " since " + l(@connection.connected_at.to_date, format: :long) if @connection.connected_at %>.
-          Runwell reads pull requests, checks, deploys, issues and who can reach a repo. It never pushes code.
-        </p>
+        <%= status_tag "Active" %>
+        <span>Connected as @<%= @connection.login %><%= " since " + l(@connection.connected_at.to_date, format: :long) if @connection.connected_at %>. Runwell reads pull requests, checks, deploys, issues and who can reach a repository. It never pushes code.</span>
       <% else %>
-        <p class="txt-small margin-none"><%= status_tag "Dormant" %> Not connected: <%= @connection.blocker %>. Repositories work without it; you just don’t get pull requests, checks and deploys.</p>
+        <%= status_tag "Dormant" %>
+        <span>Not connected: <%= @connection.blocker %>. Repositories work without it; you just don’t get pull requests, checks and deploys.</span>
       <% end %>
+    </p>
 
-      <% if @connection.last_error.present? %>
-        <p class="txt-small txt-negative margin-none"><%= @connection.last_error %></p>
-      <% end %>
-      <% if @connection.last_synced_at %>
-        <p class="txt-small txt-subtle margin-none">Last sync <%= time_ago_in_words(@connection.last_synced_at) %> ago.</p>
-      <% end %>
+    <% if @connection.last_error.present? %>
+      <%= ui :alert, variant: :destructive, title: "The last sync went wrong", description: @connection.last_error %>
+    <% end %>
+    <% if @connection.last_synced_at %>
+      <p class="code-meta">Last sync <%= time_ago_in_words(@connection.last_synced_at) %> ago.</p>
+    <% end %>
 
-      <div class="flex flex-wrap gap-half justify-center">
-        <% if @connection.configured? %>
-          <%= button_to coding_authorization_path, class: "btn btn--link txt-small", form: { data: { turbo: false } } do %>
-            <%= icon_tag "globe" %>
-            <span><%= @connection.connected? ? "Reconnect with GitHub" : "Sign in with GitHub" %></span>
-          <% end %>
+    <div class="code-buttons">
+      <% if @connection.configured? %>
+        <%= button_to coding_authorization_path, class: "ui-button", form: { data: { turbo: false } } do %>
+          <%= icon_tag "globe" %>
+          <span><%= @connection.connected? ? "Reconnect with GitHub" : "Sign in with GitHub" %></span>
         <% end %>
-        <% if @connection.connected? %>
-          <%= button_to coding_sync_path, class: "btn txt-small" do %>
-            <%= icon_tag "refresh" %>
-            <span>Sync now</span>
-          <% end %>
-        <% end %>
-      </div>
-
+      <% end %>
       <% if @connection.connected? %>
+        <%= button_to coding_sync_path, class: "ui-button", data: { variant: "outline" } do %>
+          <%= icon_tag "refresh" %>
+          <span>Sync now</span>
+        <% end %>
         <%= render "layouts/shared/confirm", trigger: "Disconnect", title: "Disconnect GitHub?",
               body: "Runwell stops hearing from GitHub and gives up its access there. Linked repositories, branches and history stay.",
               button: "Disconnect", path: coding_settings_path, icon: "remove" %>
       <% end %>
-    </section>
+    </div>
+  <% end %>
 
-    <section class="settings__section flex flex-column gap">
-      <header>
-        <h2 class="divider">Credentials and behaviour</h2>
-      </header>
-      <p class="txt-small txt-subtle margin-none">
-        Your own GitHub OAuth app (GitHub &gt; Settings &gt; Developer settings &gt; OAuth Apps). Set its callback URL to
-        <code class="txt-small"><%= coding_authorization_url %></code>
-      </p>
-      <%= form_with model: @connection, url: coding_settings_path, method: :patch, scope: :connection, class: "flex flex-column gap txt-small" do |form| %>
-        <label class="flex flex-column gap-half">
-          <span class="font-weight-bold">OAuth client id</span>
-          <%= form.text_field :client_id, class: "input full-width", autocomplete: "off" %>
-        </label>
-        <label class="flex flex-column gap-half">
-          <span class="font-weight-bold">OAuth client secret</span>
-          <%= secret_field form, :client_secret %>
-        </label>
-        <label class="flex flex-column gap-half">
-          <span class="font-weight-bold">Issues with this label become requests</span>
-          <%= form.text_field :issue_label, class: "input full-width", autocomplete: "off", placeholder: "client" %>
-        </label>
-        <label class="flex align-center gap-half">
-          <span class="switch">
-            <%= form.check_box :close_work_on_merge, class: "switch__input" %>
-            <span class="switch__btn"></span>
-          </span>
-          <span>A merged pull request marks its todo done</span>
-        </label>
-        <button type="submit" class="btn btn--link center">Save</button>
-      <% end %>
-    </section>
-
-    <% if @connection.persisted? %>
-      <section class="settings__section flex flex-column gap-half">
-        <header>
-          <h2 class="divider">Webhook</h2>
-        </header>
-        <p class="txt-small txt-subtle margin-none">Add it from a repository’s panel, or once for your whole GitHub organization (Settings &gt; Webhooks, content type JSON, every event). GitHub must be able to reach this address, so a local install needs a tunnel.</p>
-        <div class="copy-row">
-          <code class="input full-width txt-x-small overflow-ellipsis"><%= coding_github_webhooks_url %></code>
-          <button type="button" class="btn txt-x-small" data-controller="copy-to-clipboard" data-copy-to-clipboard-content-value="<%= coding_github_webhooks_url %>" data-copy-to-clipboard-success-class="btn--reversed" data-action="copy-to-clipboard#copy">Copy URL</button>
-        </div>
-        <div class="copy-row">
-          <code class="input full-width txt-x-small overflow-ellipsis">Secret: ••••••••</code>
-          <button type="button" class="btn txt-x-small" data-controller="copy-to-clipboard" data-copy-to-clipboard-content-value="<%= @connection.webhook_secret %>" data-copy-to-clipboard-success-class="btn--reversed" data-action="copy-to-clipboard#copy">Copy secret</button>
-        </div>
-      </section>
-    <% end %>
-  </div>
-
-  <div class="settings__panel panel shadow txt-align-start">
-    <section class="settings__section flex flex-column gap">
-      <header>
-        <h2 class="divider">GitHub usernames</h2>
-      </header>
-      <p class="txt-small txt-subtle margin-none">Matches commits, reviews and repository access to people. Anyone can set their own from a todo’s suggested time.</p>
-      <ul class="settings__scrollable-list">
-        <% @people.each do |person| %>
-          <%# herb:key person.id %>
-          <li class="flex align-center gap-half txt-small" data-filter-target="item">
-            <%= person_tag person, size: :large %>
-            <strong class="overflow-ellipsis min-width"><%= person.display_name %></strong>
-            <hr class="separator--horizontal flex-item-grow txt-subtle" aria-hidden="true">
-            <%= form_with url: coding_people_path, method: :patch, scope: :person, namespace: dom_id(person), class: "flex gap-half" do |form| %>
-              <%= form.hidden_field :user_id, value: person.id %>
-              <%= form.text_field :github_login, value: person.coding_identity&.github_login, class: "input txt-small", autocomplete: "off", placeholder: "GitHub username", aria: { label: "GitHub username for " + person.display_name } %>
-              <button type="submit" class="btn txt-small">Save</button>
-            <% end %>
-          </li>
+  <%= form_with model: @connection, url: coding_settings_path, method: :patch, scope: :connection, class: "code-page" do |form| %>
+    <%= ui :card, title: tag.h2("Credentials and behaviour", class: "code-title"),
+          description: "Your own GitHub OAuth app (GitHub › Settings › Developer settings › OAuth Apps). Set its callback URL to #{coding_authorization_url}" do %>
+      <div class="code-form__pair">
+        <%= form.ui :field, :client_id, label: "OAuth client id" do %>
+          <%= form.ui :input, :client_id, autocomplete: "off" %>
         <% end %>
-      </ul>
-    </section>
+        <%= form.ui :field, :client_secret, label: "OAuth client secret" do %>
+          <%= secret_field form, :client_secret %>
+        <% end %>
+      </div>
+      <%= form.ui :field, :issue_label, label: "Issues with this label become requests", description: "They come into Intake, credited to whoever opened them on GitHub." do %>
+        <%= form.ui :input, :issue_label, autocomplete: "off", placeholder: "client" %>
+      <% end %>
+      <%= switch_field form, :close_work_on_merge, label: "A merged pull request marks its #{term(:task).downcase} done", hint: "Otherwise it stays in review for a person to mark done." %>
+      <div><%= ui :button, type: :submit, content: "Save" %></div>
+    <% end %>
+  <% end %>
 
-    <section class="settings__section flex flex-column gap">
-      <header>
-        <h2 class="divider">Linked repositories</h2>
-      </header>
-      <ul class="settings__scrollable-list">
+  <% if @connection.persisted? %>
+    <%= ui :card, title: tag.h2("Webhook", class: "code-title"),
+          description: "Add it from a repository’s panel, or once for your whole GitHub organization (Settings › Webhooks, content type JSON, every event). GitHub must be able to reach this address, so a local install needs a tunnel." do %>
+      <div class="code-copy">
+        <%= ui :input, value: coding_github_webhooks_url, readonly: true, aria: { label: "Webhook URL" }, class: "code-copy__input" %>
+        <%= ui :button, variant: :outline, content: "Copy URL",
+              data: { controller: "copy-to-clipboard", copy_to_clipboard_content_value: coding_github_webhooks_url, copy_to_clipboard_success_class: "code-copied", action: "copy-to-clipboard#copy" } %>
+      </div>
+      <div class="code-copy">
+        <%= ui :input, value: "Secret: ••••••••", readonly: true, aria: { label: "Webhook secret, hidden" }, class: "code-copy__input" %>
+        <%= ui :button, variant: :outline, content: "Copy secret",
+              data: { controller: "copy-to-clipboard", copy_to_clipboard_content_value: @connection.webhook_secret, copy_to_clipboard_success_class: "code-copied", action: "copy-to-clipboard#copy" } %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <%= ui :card, title: tag.h2("GitHub usernames", class: "code-title"), description: "Matches commits, reviews and repository access to people. Anyone can set their own on Code › Time from commits." do %>
+    <ul class="code-list code-list--scroll">
+      <% @people.each do |person| %>
+        <%# herb:key person.id %>
+        <li class="code-row">
+          <%= person_tag person %>
+          <strong class="code-row__main"><%= person.display_name %></strong>
+          <%= form_with url: coding_people_path, method: :patch, scope: :person, namespace: dom_id(person), class: "code-inline-form" do |form| %>
+            <%= form.hidden_field :user_id, value: person.id %>
+            <%= form.ui :input, :github_login, value: person.coding_identity&.github_login, autocomplete: "off", placeholder: "GitHub username", aria: { label: "GitHub username for #{person.display_name}" } %>
+            <%= ui :button, type: :submit, variant: :outline, size: :sm, content: "Save" %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <%= ui :card, title: tag.h2("Linked repositories", class: "code-title") do %>
+    <% if @repositories.any? %>
+      <ul class="code-list code-list--scroll">
         <% @repositories.each do |repository| %>
           <%# herb:key repository.id %>
-          <li class="flex align-center gap-half txt-small" data-filter-target="item">
-            <%= link_to search_result_path(repository.linkable), class: "txt-ink txt-align-start overflow-ellipsis min-width" do %>
+          <li class="code-row">
+            <%= link_to search_result_path(repository.linkable), class: "code-row__main" do %>
               <strong><%= repository.name %></strong>
-              <div class="txt-x-small txt-subtle"><%= repository.client.name %> · <%= repository.linked_label %></div>
+              <span class="code-meta"><%= [ repository.client.name, (repository.linked_label unless repository.linkable_type == "Client") ].compact.join(" · ") %></span>
             <% end %>
-            <hr class="separator--horizontal flex-item-grow txt-subtle" aria-hidden="true">
             <% if repository.github? %>
-              <%= status_tag repository.webhook_id ? "Active" : "Dormant" %>
+              <%= ui :badge, variant: (repository.webhook_id ? :success : :outline), content: (repository.webhook_id ? "Webhook" : "No webhook") %>
             <% end %>
           </li>
         <% end %>
       </ul>
-      <% if @repositories.empty? %>
-        <p class="txt-small txt-subtle margin-none">No repository is linked yet. Link one from the quick actions (A) on a client, engagement or todo.</p>
-      <% end %>
-    </section>
-  </div>
-</section>
+    <% else %>
+      <%= ui :empty, size: :sm, description: "No repository is linked yet. Link one from the quick actions (A) on a #{term(:client).downcase}, #{term(:work).downcase} or #{term(:task).downcase}." %>
+    <% end %>
+  <% end %>
+</div>

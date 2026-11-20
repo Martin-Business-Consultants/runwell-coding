@@ -1,0 +1,26 @@
+<%# locals: (work:) %>
+<%# What shipped: successful production deploys of repos the team chose to share. Inside the
+    portal's card for plugins, so a heading and a list, not a card of its own. %>
+<% repositories = Coding::Repository.for(work).select(&:share_deploys) %>
+<% deploys = repositories.any? ? Coding::Deploy.where(repository: repositories).succeeded.production.recent.limit(10).to_a.uniq(&:sha) : [] %>
+<% if deploys.any? %>
+  <section class="code-shipped">
+    <h2 class="code-title">Shipped</h2>
+    <ul class="code-list">
+      <% deploys.each do |deploy| %>
+        <%# herb:key deploy.id %>
+        <li class="code-row">
+          <div class="code-row__main">
+            <strong><%= l deploy.deployed_at.to_date, format: :long %></strong>
+            <% if deploy.description.present? %>
+              <span class="code-meta"><%= deploy.description %></span>
+            <% end %>
+          </div>
+          <% if deploy.url.present? %>
+            <%= ui :button, href: deploy.url, variant: :outline, size: :sm, content: "View", target: "_blank", rel: "noopener" %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </section>
+<% end %>

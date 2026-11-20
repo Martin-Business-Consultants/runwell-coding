@@ -1,10 +1,10 @@
-# Linking a repo to a client, engagement or todo (from the quick action tray), changing how
+# Linking a repo to a client, a piece of work or a task (from the quick action tray), changing how
 # it's set up, or letting go of it.
 module Coding
   class RepositoriesController < ApplicationController
     allow_staff
     agent_tool :link_repository, on: :create, title: "Link a git repository",
-      description: "record: \"Type:id\" for a Client, Engagement or Todo (a scope item goes to its engagement, a request to its client). A todo uses its engagement's repos unless it has its own, and an engagement its client's. url: any git remote. setup_notes: how to get it running and where secrets live (never the secrets).",
+      description: "record: \"Type:id\" for a Client, Work or Task (Work by its ref, Work:P-3; a section goes to its work). A task uses its work's repos unless it has its own, and a piece of work its client's. url: any git remote. setup_notes: how to get it running and where secrets live (never the secrets).",
       params: { record: "string!", repository: { url: "string!", default_branch: "string", path: "string", staging_url: "string", production_url: "string", setup_notes: "text" } }
     agent_tool :update_repository, on: :update, title: "Change a linked repository",
       params: { repository: { url: "string", default_branch: "string", path: "string", staging_url: "string", production_url: "string", setup_notes: "text" } }
@@ -14,7 +14,7 @@ module Coding
 
     def create
       linkable = Repository.linkable_for(QuickAction.locate(params[:record], QuickAction::RECORD_TYPES)) if params[:record].present?
-      return redirect_back(fallback_location: root_path, alert: "Choose a client, engagement or todo for the repository.") unless linkable
+      return redirect_back(fallback_location: root_path, alert: "Choose a client, a piece of work or a task for the repository.") unless linkable
 
       repository = Repository.new(repository_params.merge(linkable: linkable, added_by: Current.user))
       if repository.save

@@ -1,0 +1,62 @@
+<% @page_title = "Code" %>
+<%= render "coding/nav", current: :attention %>
+<%= ui :page_header, title: "Needs attention", description: "Across every linked repository: pull requests whose checks fail, deploys that failed, and people who left but can still reach a repository." %>
+
+<div class="code-page">
+  <% if @failing.empty? && @deploys.empty? && @departed.empty? %>
+    <%= ui :empty, icon: :check, title: "Nothing needs you", description: (Coding::Connection.current&.connected? ? "Checks pass, the latest deploys went through, and nobody who left can reach a repository." : "Connect GitHub in Settings › Code to hear about pull requests, checks and deploys.") %>
+  <% end %>
+
+  <% if @failing.any? %>
+    <%= ui :card, title: tag.h2("Checks failing", class: "code-title"), description: pluralize(@failing.size, "pull request") do %>
+      <ul class="code-list">
+        <% @failing.each do |branch| %>
+          <%# herb:key branch.id %>
+          <li class="code-row">
+            <%= link_to task_path(branch.task), class: "code-row__main" do %>
+              <strong><%= branch.task.title %></strong>
+              <span class="code-meta"><%= [ branch.task.work&.title || branch.task.client&.name, branch.repository.name, branch.pr_label ].compact.join(" · ") %></span>
+            <% end %>
+            <% if branch.pr_url %>
+              <%= ui :button, href: branch.pr_url, variant: :outline, size: :sm, content: "Pull request", target: "_blank", rel: "noopener" %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+
+  <% if @deploys.any? %>
+    <%= ui :card, title: tag.h2("Deploys failing", class: "code-title"), description: "The latest deploy to each of these environments failed." do %>
+      <ul class="code-list">
+        <% @deploys.each do |deploy| %>
+          <%# herb:key deploy.id %>
+          <li class="code-row">
+            <div class="code-row__main">
+              <strong><%= deploy.label %></strong>
+              <span class="code-meta"><%= deploy.repository.client.name %> · <%= deploy.sha.to_s.first(7) %> · <%= time_ago_in_words(deploy.deployed_at) %> ago</span>
+            </div>
+            <%= status_tag deploy.state.humanize %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+
+  <% if @departed.any? %>
+    <%= ui :card, title: tag.h2("Left, but can still reach a repository", class: "code-title"), description: "Deactivated here, still a collaborator on GitHub. Remove their access there." do %>
+      <ul class="code-list">
+        <% @departed.each do |collaborator| %>
+          <%# herb:key collaborator.id %>
+          <li class="code-row">
+            <div class="code-row__main">
+              <strong><%= @names[collaborator.login] || collaborator.login %></strong>
+              <span class="code-meta">@<%= collaborator.login %> · <%= collaborator.repository.name %></span>
+            </div>
+            <%= ui :button, href: "#{collaborator.repository.web_url}/settings/access", variant: :outline, size: :sm, content: "Access on GitHub", target: "_blank", rel: "noopener" %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+</div>

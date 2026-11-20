@@ -1,49 +1,56 @@
-/* The Code plugin's repositories (coding/_repository): one line for the name and where it runs,
-/* then one row of tools. The clone command reads like a field; editing opens under the tools. */
-@layer components {
-  .code-repo__name {
-    align-items: baseline;
-    display: flex;
-    gap: 0.6ch;
-  }
+/* tokens: runeui */
+/* The Code plugin's pages and panels, linked on every page while it's on (Runwell::Plugins.stylesheet).
+/* runeui's tokens only (shadcn's names and --ui-*, plus the core's --faint-foreground and
+/* --brand-tint; docs/theming.md in Runwell), so themes reach it. Spacing in rems. */
 
-  .code-repo__notes {
-    --lines: 2;
+/* Its pages (Code, Time from commits, a task's checkout, Settings › Code): cards down the page. */
+.code-page { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.code-page--split { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+@media (max-width: 960px) { .code-page--split { grid-template-columns: minmax(0, 1fr); } }
+.code-page [data-slot="card-content"], .code-card [data-slot="card-content"] { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
 
-    p { margin: 0; }
-  }
+/* A record's tab (client, work, task): its cards stacked. */
+.code-panel { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
 
-  .code-repo__tools {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--inline-space-half);
-  }
+.code-title { margin: 0; font: inherit; }
+.code-meta { margin: 0; color: var(--muted-foreground); font-size: var(--ui-text-xs); }
+.code-line { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; font-size: var(--ui-text-sm); }
+.code-notes { font-size: var(--ui-text-sm); }
+.code-stack { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+.code-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.code-buttons form { display: contents; }
+.code-bullets { display: flex; flex-direction: column; gap: .25rem; margin: 0; padding-inline-start: 1.25em; font-size: var(--ui-text-sm); }
 
-  .code-repo__clone {
-    background-color: var(--color-ink-lightest);
-    border-radius: var(--radius-control);
-    color: var(--color-ink-medium);
-    flex: 1 1 12rem;
-    min-inline-size: 0;
-    padding: 0.45em 0.8em;
-    white-space: nowrap;
-  }
+/* Lists of rows: what a row is on the left, growing; its status and buttons at the end. */
+.code-list { display: flex; flex-direction: column; gap: .5rem; width: 100%; margin: 0; padding: 0; list-style: none; font-size: var(--ui-text-sm); }
+.code-list--spaced { gap: 1rem; }
+.code-list--spaced > li + li { padding-top: 1rem; border-top: 1px solid var(--border); }
+.code-list--scroll { max-height: 24rem; overflow-y: auto; }
+.code-row { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.code-row form { display: contents; }
+.code-row__main { display: flex; flex: 1; flex-direction: column; min-width: 0; color: inherit; text-decoration: none; }
+.code-row__main strong { overflow: hidden; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+a.code-row__main:hover strong { text-decoration: underline; }
 
-  .code-repo__edit {
-    display: contents;
+/* One repository (coding/_repository): name and environments, setup notes in two lines at most,
+/* deploys, then a row of tools with the clone command reading like a field. */
+.code-repo { display: flex; flex-direction: column; gap: .5rem; min-width: 0; font-size: var(--ui-text-sm); }
+.code-repo__notes { display: -webkit-box; overflow: hidden; color: var(--muted-foreground); font-size: var(--ui-text-xs); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.code-repo__notes p { margin: 0; }
+.code-repo__tools { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
+.code-repo__tools form { display: contents; }
+.code-repo__clone { flex: 1 1 12rem; min-width: 0; padding: .35rem .6rem; overflow: hidden; border-radius: var(--ui-radius-md); background: var(--muted); color: var(--muted-foreground); font-family: var(--font-mono); font-size: var(--ui-text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.code-repo__edit [data-slot="collapsible-content"] { padding-top: .5rem; }
 
-    &[open] {
-      display: flex;
-      flex-basis: 100%;
-      flex-direction: column;
-      gap: var(--block-space-half);
-      margin-block-start: var(--block-space-half);
+/* A value to copy: a read-only field and its button. */
+.code-copy { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.code-copy__input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: var(--ui-text-xs); }
+.code-copied { border-color: var(--primary); color: var(--primary); }
 
-      > summary { align-self: flex-end; }
-    }
+/* Forms: a repository's fields, a username beside its button. */
+.code-form { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.code-form__pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; }
+.code-inline-form { display: flex; align-items: center; gap: .5rem; min-width: 0; }
 
-    > summary { list-style: none; }
-    > summary::-webkit-details-marker { display: none; }
-  }
-}
+/* The portal's Shipped list, inside the core's card for plugins. */
+.code-shipped { display: flex; flex-direction: column; gap: .5rem; }

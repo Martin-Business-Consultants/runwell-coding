@@ -1,0 +1,11 @@
+<%# locals: (current:) %>
+<%# The Code pages' sidebar (section_nav): what needs attention, your time from commits, and the
+    settings for those who manage them. %>
+<% section_nav "Code" do %>
+  <%= section_nav_heading "Code" %>
+  <%= section_nav_link "Needs attention", coding_attention_path, icon: "bell-alert", current: current == :attention %>
+  <%= section_nav_link "Time from commits", coding_time_suggestions_path, icon: "history", current: current == :time %>
+  <% if can?(:manage_settings) %>
+    <%= section_nav_link "Settings", coding_settings_path, icon: "gear", current: false %>
+  <% end %>
+<% end %>

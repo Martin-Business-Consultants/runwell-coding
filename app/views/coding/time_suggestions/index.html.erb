@@ -1,48 +1,38 @@
 <% @page_title = "Time from commits" %>
+<%= render "coding/nav", current: :time %>
+<%= ui :page_header, title: @page_title, description: "Time worth logging, worked out from the commits you pushed to a #{term(:task).downcase}’s branch. Nothing is logged until you say so." %>
 
-<% content_for :header do %>
-  <%= parent_page "Home", root_path %>
-<% end %>
+<div class="code-page">
+  <% unless @time_tracking %>
+    <%= ui :alert, title: "Time tracking is off", description: "Switch it on in Settings › Plugins to log these." %>
+  <% end %>
 
-<section class="settings">
-  <div class="settings__panel panel shadow txt-align-start">
-    <h1 class="page-title"><%= @page_title %></h1>
-    <section class="settings__section flex flex-column gap">
-      <header>
-        <h2 class="divider">Suggested for you</h2>
-      </header>
-      <% unless @time_tracking %>
-        <p class="txt-small txt-subtle margin-none">Switch on Time tracking in Settings &gt; Plugins to log these.</p>
-      <% end %>
-      <ul class="settings__scrollable-list">
+  <%= ui :card, title: tag.h2("Suggested for you", class: "code-title") do %>
+    <% if @suggestions.any? %>
+      <ul class="code-list">
         <% @suggestions.each do |suggestion| %>
           <%# herb:key suggestion.id %>
-          <li class="flex align-center gap-half txt-small" data-filter-target="item">
-            <div class="txt-align-start overflow-ellipsis min-width">
-              <strong><%= code_duration suggestion.minutes %></strong> <%= suggestion.todo.title %>
-              <div class="txt-x-small txt-subtle"><%= l suggestion.date, format: :short %> · <%= suggestion.todo.engagement&.ref || suggestion.todo.client&.name %> · <%= suggestion.note %></div>
+          <li class="code-row">
+            <div class="code-row__main">
+              <span><strong><%= code_duration suggestion.minutes %></strong> <%= suggestion.task.title %></span>
+              <span class="code-meta"><%= [ l(suggestion.date, format: :short), suggestion.task.work&.title || suggestion.task.client&.name, suggestion.note ].compact.join(" · ") %></span>
             </div>
-            <hr class="separator--horizontal flex-item-grow txt-subtle" aria-hidden="true">
             <% if @time_tracking %>
-              <%= button_to "Log", coding_time_suggestions_path, params: { suggestion: suggestion.id }, class: "btn btn--link txt-x-small" %>
+              <%= button_to "Log", coding_time_suggestions_path, params: { suggestion: suggestion.id }, class: "ui-button", data: { size: "sm" } %>
             <% end %>
-            <%= button_to "Dismiss", coding_time_dismissal_path, params: { suggestion: suggestion.id }, class: "btn txt-x-small" %>
+            <%= button_to "Dismiss", coding_time_dismissal_path, params: { suggestion: suggestion.id }, class: "ui-button", data: { variant: "ghost", size: "sm" } %>
           </li>
         <% end %>
       </ul>
-      <% if @suggestions.empty? %>
-        <p class="txt-small txt-subtle margin-none">Nothing to suggest. Commits pushed to a todo’s branch show up here, matched by your GitHub username.</p>
-      <% end %>
-    </section>
+    <% else %>
+      <%= ui :empty, size: :sm, description: "Nothing to suggest. Commits pushed to a #{term(:task).downcase}’s branch show up here, matched by your GitHub username." %>
+    <% end %>
+  <% end %>
 
-    <section class="settings__section flex flex-column gap-half">
-      <header>
-        <h2 class="divider">Your GitHub username</h2>
-      </header>
-      <%= form_with url: coding_identity_path, method: :patch, scope: :identity, class: "flex gap-half txt-small" do |form| %>
-        <%= form.text_field :github_login, value: Current.user.coding_identity&.github_login, class: "input flex-item-grow", autocomplete: "off", placeholder: "octocat", aria: { label: "GitHub username" } %>
-        <button type="submit" class="btn">Save</button>
-      <% end %>
-    </section>
-  </div>
-</section>
+  <%= ui :card, title: tag.h2("Your GitHub username", class: "code-title"), description: "Matches your commits, reviews and repository access to you." do %>
+    <%= form_with url: coding_identity_path, method: :patch, scope: :identity, class: "code-inline-form" do |form| %>
+      <%= form.ui :input, :github_login, value: Current.user.person.coding_identity&.github_login, autocomplete: "off", placeholder: "octocat", aria: { label: "GitHub username" } %>
+      <%= ui :button, type: :submit, variant: :outline, content: "Save" %>
+    <% end %>
+  <% end %>
+</div>

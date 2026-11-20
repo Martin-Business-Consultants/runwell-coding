@@ -3,7 +3,7 @@
 module Coding
   class AuthorizationsController < ApplicationController
     require_permission :manage_settings
-    agent_exempt :create, :show, reason: "signing in to GitHub needs a person in a browser"
+    browser_only :create, :show, reason: "signing in to GitHub needs a person in a browser"
 
     before_action { @connection = Connection.for_settings }
 

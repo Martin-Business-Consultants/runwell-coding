@@ -1,8 +1,8 @@
 module Coding
   # One delivery from GitHub, already verified. Each event updates what Runwell knows about a
   # repo's branches, deploys, commits and issues, and records the moments that matter on the
-  # engagement's timeline. A repo linked in several places (a client and one of its
-  # engagements) is one GitHub repo, so each row hears about it.
+  # task's or work's timeline. A repo linked in several places (a client and one of its pieces of
+  # work) is one GitHub repo, so each row hears about it.
   class Webhook
     def initialize(event, payload)
       @event, @payload = event.to_s, payload
@@ -22,7 +22,7 @@ module Coding
     end
 
     private
-      def repositories = @repositories ||= Repository.find_by_full_name(@payload.dig("repository", "full_name")).includes(:engagement, :client).to_a
+      def repositories = @repositories ||= Repository.find_by_full_name(@payload.dig("repository", "full_name")).includes(:work, :client).to_a
       def connection = Connection.current
 
       def pull_request
@@ -31,13 +31,13 @@ module Coding
           was = branch.pr_state
           branch.update!(pr_number: pr["number"], pr_url: pr["html_url"], pr_title: pr["title"], pr_state: pr_state(pr),
             merged_at: pr["merged_at"], review_requested: pr["requested_reviewers"].present?)
-          todo = branch.todo
+          task = branch.task
           if branch.pr_state == "open" && was.nil?
-            todo.record_event!("coding.pull_request_opened", payload: { repository: branch.repository.name, number: pr["number"] })
+            task.record_event!("coding.pull_request_opened", payload: { repository: branch.repository.name, number: pr["number"] })
           elsif branch.pr_state == "merged" && was != "merged"
-            todo.record_event!("coding.merged", payload: { repository: branch.repository.name, number: pr["number"] })
-            # update, not update!: a rule on the todo (a QA check still to pass) may keep it open.
-            todo.update(status: "done") if connection&.close_work_on_merge && todo.status != "done"
+            task.record_event!("coding.merged", payload: { repository: branch.repository.name, number: pr["number"] })
+            # update, not update!: a rule on the task (a QA check still to pass) may keep it open.
+            task.update(status: "done") if connection&.close_work_on_merge && task.status != "done"
           end
         end
       end
@@ -48,7 +48,7 @@ module Coding
         pr = @payload["pull_request"]
         each_branch(pr.dig("head", "ref")) do |branch|
           branch.update!(review_requested: false)
-          branch.todo.record_event!("coding.reviewed", payload: { number: pr["number"], by: @payload.dig("review", "user", "login"), state: @payload.dig("review", "state") })
+          branch.task.record_event!("coding.reviewed", payload: { number: pr["number"], by: @payload.dig("review", "user", "login"), state: @payload.dig("review", "state") })
         end
       end
 
@@ -62,7 +62,7 @@ module Coding
         each_branch(suite["head_branch"]) { it.update!(checks_state: state) }
       end
 
-      # A successful production deploy lands on the timeline of each engagement the repo serves.
+      # A successful production deploy lands on the timeline of each piece of work the repo serves.
       def deployment_status
         deployment, status = @payload["deployment"], @payload["deployment_status"]
         shipped = []
@@ -70,23 +70,23 @@ module Coding
           deploy = repository.deploys.find_or_initialize_by(github_id: deployment["id"])
           deploy.update!(environment: deployment["environment"], state: status["state"], sha: deployment["sha"], ref: deployment["ref"],
             url: status["environment_url"].presence || status["target_url"], description: status["description"], deployed_at: status["created_at"] || Time.current)
-          shipped |= repository.engagements if deploy.production? && deploy.succeeded? && deploy.saved_change_to_state?
+          shipped |= repository.works if deploy.production? && deploy.succeeded? && deploy.saved_change_to_state?
         end
         shipped.each { it.record_event!("coding.deployed", payload: { repository: repositories.first.name, environment: deployment["environment"], sha: deployment["sha"].to_s.first(7) }) }
       end
 
-      # An issue with the client label becomes a request (unassigned work on the client), once.
+      # An issue with the client label becomes a request (a task in Intake, credited to whoever
+      # opened it on GitHub), once.
       def issue
         issue = @payload["issue"]
         return unless @payload["action"].in?(%w[opened labeled])
         return unless issue["labels"].to_a.any? { it["name"].to_s.casecmp?(connection&.issue_label.to_s) }
         return if Issue.where(repository: repositories, number: issue["number"]).exists?
 
-        repository = repositories.find(&:engagement) || repositories.first
-        todo = ::Todo.create!(client: repository.client, engagement: repository.engagement, title: issue["title"].to_s.truncate(200), source: "github",
-          sender_name: issue.dig("user", "login"), description: request_body(issue))
-        todo.record_event!("todo.requested", payload: { repository: repository.name, issue: issue["number"] })
-        Issue.create!(repository: repository, number: issue["number"], todo: todo)
+        repository = repositories.find(&:work) || repositories.first
+        task = ::Task.create!(client: repository.client, work: repository.work, title: issue["title"].to_s.truncate(200), source: "github",
+          sender_name: issue.dig("user", "login"), description: request_body(issue), requested: true)
+        Issue.create!(repository: repository, number: issue["number"], task: task)
       end
 
       def push
@@ -94,7 +94,7 @@ module Coding
         each_branch(name) do |branch|
           @payload["commits"].to_a.each do |commit|
             branch.repository.commits.find_or_create_by!(sha: commit["id"]) do |record|
-              record.todo = branch.todo
+              record.task = branch.task
               record.author_login = commit.dig("author", "username")
               record.user = Identity.user_for(record.author_login)
               record.message = commit["message"].to_s.lines.first.to_s.strip.truncate(250)
