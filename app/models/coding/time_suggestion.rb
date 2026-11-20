@@ -1,24 +1,25 @@
 module Coding
-  # Time worth logging, worked out from commits: one person's commits on one todo on one day,
+  # Time worth logging, worked out from commits: one person's commits on one task on one day,
   # from the first to the last plus a half hour lead-in, to the nearest quarter hour. Only a
   # suggestion; nothing is logged until someone says so.
   class TimeSuggestion
     LEAD_IN = 30
 
-    attr_reader :user, :todo, :date, :commits
+    attr_reader :user, :task, :date, :commits
 
+    # A person's suggestions (an agent's are its person's: commits are matched to people).
     def self.for(user)
-      Commit.unsettled.where(user: user).includes(todo: %i[engagement client]).order(:committed_at).to_a
-        .group_by { [ it.todo, it.committed_at.in_time_zone.to_date ] }
-        .map { |(todo, date), commits| new(user, todo, date, commits) }
+      Commit.unsettled.where(user: user.person).includes(task: %i[work client]).order(:committed_at).to_a
+        .group_by { [ it.task, it.committed_at.in_time_zone.to_date ] }
+        .map { |(task, date), commits| new(user.person, task, date, commits) }
         .sort_by(&:date).reverse
     end
 
-    def initialize(user, todo, date, commits)
-      @user, @todo, @date, @commits = user, todo, date, commits
+    def initialize(user, task, date, commits)
+      @user, @task, @date, @commits = user, task, date, commits
     end
 
-    def id = "#{todo.id}-#{date.iso8601}"
+    def id = "#{task.id}-#{date.iso8601}"
 
     def minutes
       span = ((commits.last.committed_at - commits.first.committed_at) / 60).round

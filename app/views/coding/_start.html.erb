@@ -1,0 +1,52 @@
+<%# locals: (task:) %>
+<%# Starting a task on your own machine, and where its code is now: its branches and pull
+    requests, and time suggested from your commits on it. %>
+<% workspace = Coding::Workspace.new(task) %>
+<% if workspace.repositories.any? %>
+  <% command = "runwell checkout_task --task_id #{task.id} --on #{request.host_with_port}" %>
+  <%= ui :card, class: "code-card", id: "code_start", title: tag.h2("Work on it", class: "code-title"),
+        description: "Or ask your agent to “work on Task:#{task.id}”." do %>
+    <div class="code-copy">
+      <%= ui :input, value: command, readonly: true, aria: { label: "The command to start it" }, class: "code-copy__input" %>
+      <%= ui :button, variant: :outline, content: "Copy",
+            data: { controller: "copy-to-clipboard", copy_to_clipboard_content_value: command, copy_to_clipboard_success_class: "code-copied", action: "copy-to-clipboard#copy" } %>
+    </div>
+    <p class="code-meta"><%= link_to "Clone commands and context", coding_task_checkout_path(task) %></p>
+
+    <% branches = workspace.branches.values %>
+    <% if branches.any? %>
+      <ul class="code-list">
+        <% branches.each do |branch| %>
+          <%# herb:key branch.id %>
+          <li class="code-row">
+            <div class="code-row__main">
+              <strong><%= branch.name %></strong>
+              <span class="code-meta"><%= branch.repository.name %> · <%= branch.pr_label %><%= " · review requested" if branch.review_requested %></span>
+            </div>
+            <% if branch.checks_state == "failure" %>
+              <%= status_tag "Blocked" %>
+            <% end %>
+            <% if branch.pr_url %>
+              <%= ui :button, href: branch.pr_url, variant: :outline, size: :sm, content: "Pull request", target: "_blank", rel: "noopener" %>
+            <% elsif branch.compare_url %>
+              <%= ui :button, href: branch.compare_url, variant: :outline, size: :sm, content: "Open a pull request", target: "_blank", rel: "noopener" %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <% suggestions = Coding::TimeSuggestion.for(Current.user).select { it.task == task } %>
+    <% if suggestions.any? %>
+      <ul class="code-list">
+        <% suggestions.each do |suggestion| %>
+          <%# herb:key suggestion.id %>
+          <li class="code-row">
+            <span class="code-row__main"><span><strong><%= code_duration suggestion.minutes %></strong> suggested from your commits on <%= l suggestion.date, format: :short %></span></span>
+            <%= ui :button, href: coding_time_suggestions_path, variant: :outline, size: :sm, content: "Review" %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+<% end %>

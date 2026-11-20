@@ -3,6 +3,10 @@
 # engagement its client's). Branches tie a todo to a branch and its pull request. The rest is
 # what GitHub tells us through webhooks and the nightly sync: deploys, commits, issues turned
 # into requests, and who can reach each repo. The connection is one row.
+#
+# The columns keep the names they had (engagement_id, todo_id): RenameCodingToWorkAndTasks
+# renames them on every install. On an install that starts after Runwell 5.0 the core's tables
+# are works and tasks, and there are no requests, so the foreign keys point at what exists.
 class CreateCoding < ActiveRecord::Migration[8.1]
   def change
     create_table :coding_connections do |t|
@@ -22,7 +26,7 @@ class CreateCoding < ActiveRecord::Migration[8.1]
 
     create_table :coding_repositories do |t|
       t.references :linkable, polymorphic: true, null: false
-      t.references :engagement, foreign_key: true
+      t.references :engagement, foreign_key: { to_table: core(:engagements, :works) }
       t.references :client, null: false, foreign_key: true
       t.references :added_by, foreign_key: { to_table: :users }
       t.string :url, null: false
@@ -39,7 +43,7 @@ class CreateCoding < ActiveRecord::Migration[8.1]
     add_index :coding_repositories, :full_name
 
     create_table :coding_branches do |t|
-      t.references :todo, null: false, foreign_key: true
+      t.references :todo, null: false, foreign_key: { to_table: core(:todos, :tasks) }
       t.references :repository, null: false, foreign_key: { to_table: :coding_repositories }
       t.string :name, null: false
       t.integer :pr_number
@@ -69,7 +73,7 @@ class CreateCoding < ActiveRecord::Migration[8.1]
 
     create_table :coding_commits do |t|
       t.references :repository, null: false, foreign_key: { to_table: :coding_repositories }
-      t.references :todo, foreign_key: true
+      t.references :todo, foreign_key: { to_table: core(:todos, :tasks) }
       t.references :user, foreign_key: true
       t.string :sha, null: false
       t.string :author_login
@@ -83,7 +87,7 @@ class CreateCoding < ActiveRecord::Migration[8.1]
 
     create_table :coding_issues do |t|
       t.references :repository, null: false, foreign_key: { to_table: :coding_repositories }
-      t.references :request, foreign_key: true
+      t.references :request, foreign_key: table_exists?(:requests)
       t.integer :number, null: false
       t.timestamps
     end
@@ -103,4 +107,8 @@ class CreateCoding < ActiveRecord::Migration[8.1]
     end
     add_index :coding_identities, :github_login, unique: true
   end
+
+  private
+    # The core's table as it was then, or as it is now.
+    def core(old, new) = table_exists?(old) ? old : new
 end
